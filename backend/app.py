@@ -42,10 +42,17 @@ def init_db():
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
                 title      TEXT NOT NULL,
                 done       INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                position   INTEGER NOT NULL DEFAULT 0
             )
             """
         )
+        # migrate older DBs that predate the manual-ordering column
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(tasks)")]
+        if "position" not in cols:
+            conn.execute(
+                "ALTER TABLE tasks ADD COLUMN position INTEGER NOT NULL DEFAULT 0"
+            )
         conn.commit()
 
 
@@ -107,7 +114,7 @@ def task_to_dict(row):
 def list_tasks():
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT * FROM tasks ORDER BY done ASC, id DESC"
+            "SELECT * FROM tasks ORDER BY position ASC, id DESC"
         ).fetchall()
     return jsonify(tasks=[task_to_dict(r) for r in rows])
 
@@ -119,13 +126,26 @@ def create_task():
     if not title:
         return jsonify(error="title required"), 400
     with get_db() as conn:
+        # new tasks land at the top (smallest position)
+        top = conn.execute("SELECT COALESCE(MIN(position), 0) FROM tasks").fetchone()[0]
         cur = conn.execute(
-            "INSERT INTO tasks (title, done, created_at) VALUES (?,0,?)",
-            (title, datetime.utcnow().isoformat() + "Z"),
+            "INSERT INTO tasks (title, done, created_at, position) VALUES (?,0,?,?)",
+            (title, datetime.utcnow().isoformat() + "Z", top - 1),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM tasks WHERE id=?", (cur.lastrowid,)).fetchone()
     return jsonify(task_to_dict(row)), 201
+
+
+@app.route("/api/tasks/reorder", methods=["POST"])
+def reorder_tasks():
+    payload = request.get_json(force=True, silent=True) or {}
+    order = payload.get("order") or []
+    with get_db() as conn:
+        for idx, tid in enumerate(order):
+            conn.execute("UPDATE tasks SET position=? WHERE id=?", (idx, int(tid)))
+        conn.commit()
+    return jsonify(ok=True)
 
 
 @app.route("/api/tasks/<int:task_id>", methods=["PATCH"])
