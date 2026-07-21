@@ -46,88 +46,110 @@ export default function App() {
   const [label, setLabel] = useState("");
   const [autostart, setAutostart] = useState(true);
   const [cycle, setCycle] = useState(0);
+  const [seq, setSeq] = useState(0); // bumped every time a fresh session begins
   const [stats, setStats] = useState({
     today: { count: 0, minutes: 0 },
     total: { count: 0, minutes: 0 },
-    recent: [],
   });
 
   const deadlineRef = useRef(null);
+  // latest values read from inside the timer's interval closure
+  const autostartRef = useRef(autostart);
+  const modeRef = useRef(mode);
+  const labelRef = useRef(label);
+  const remainingRef = useRef(remaining);
+  autostartRef.current = autostart;
+  modeRef.current = mode;
+  labelRef.current = label;
+  remainingRef.current = remaining;
+
   const total = MODES[mode].minutes * 60;
   const accent = MODES[mode].accent;
 
   const loadStats = () =>
     fetch("/api/stats")
       .then((r) => r.json())
-      .then(setStats)
+      .then((d) => setStats({ today: d.today, total: d.total }))
       .catch(() => {});
 
   useEffect(() => {
     loadStats();
   }, []);
 
-  // Switch mode -> reset the clock.
-  useEffect(() => {
-    setRemaining(MODES[mode].minutes * 60);
-    deadlineRef.current = null;
-  }, [mode]);
-
-  // Timer loop driven by a wall-clock deadline (survives tab throttling).
+  // Timer loop, driven by a wall-clock deadline (survives tab throttling).
+  // Depends on `seq` too, so a new session restarts it even when `running`
+  // ends up true -> true across an auto-advance.
   useEffect(() => {
     if (!running) return;
     if (!deadlineRef.current) {
-      deadlineRef.current = Date.now() + remaining * 1000;
+      deadlineRef.current = Date.now() + remainingRef.current * 1000;
     }
     const id = setInterval(() => {
       const left = Math.round((deadlineRef.current - Date.now()) / 1000);
       if (left <= 0) {
         clearInterval(id);
-        complete();
+        setRemaining(0);
+        advance(true); // natural completion -> record it
       } else {
         setRemaining(left);
       }
     }, 250);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
+  }, [running, seq]);
 
   useEffect(() => {
     document.title = `${fmt(remaining)} · ${MODES[mode].label} — Pomodoro Flow`;
   }, [remaining, mode]);
 
-  function complete() {
+  // End the current phase. `record` = log a finished focus session (only true
+  // on a natural timer finish, never on a manual skip).
+  function advance(record) {
     ding();
-    setRunning(false);
-    deadlineRef.current = null;
-    const finished = mode;
+    const finished = modeRef.current;
+    let nextMode = "focus";
     if (finished === "focus") {
-      fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "focus", minutes: MODES.focus.minutes, label }),
-      })
-        .then(loadStats)
-        .catch(() => {});
-      const next = (cycle + 1) % 4 === 0 ? "long" : "short";
-      setCycle((c) => c + 1);
-      go(next, autostart);
-    } else {
-      go("focus", autostart);
+      if (record) {
+        fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mode: "focus",
+            minutes: MODES.focus.minutes,
+            label: labelRef.current,
+          }),
+        })
+          .then(loadStats)
+          .catch(() => {});
+      }
+      const nextCycle = cycle + 1;
+      setCycle(nextCycle);
+      nextMode = nextCycle % 4 === 0 ? "long" : "short";
     }
+    go(nextMode, autostartRef.current);
   }
 
   function go(nextMode, autoRun) {
     setMode(nextMode);
     setRemaining(MODES[nextMode].minutes * 60);
+    remainingRef.current = MODES[nextMode].minutes * 60;
     deadlineRef.current = null;
     setRunning(Boolean(autoRun));
+    setSeq((s) => s + 1);
+  }
+
+  function selectMode(key) {
+    setRunning(false);
+    deadlineRef.current = null;
+    setMode(key);
+    setRemaining(MODES[key].minutes * 60);
+    remainingRef.current = MODES[key].minutes * 60;
   }
 
   function toggle() {
     if (running) {
-      // pause: freeze remaining, drop the deadline
       setRunning(false);
-      deadlineRef.current = null;
+      deadlineRef.current = null; // freeze at current remaining
     } else {
       setRunning(true);
     }
@@ -137,6 +159,7 @@ export default function App() {
     setRunning(false);
     deadlineRef.current = null;
     setRemaining(MODES[mode].minutes * 60);
+    remainingRef.current = MODES[mode].minutes * 60;
   }
 
   const progress = useMemo(() => 1 - remaining / total, [remaining, total]);
@@ -156,10 +179,7 @@ export default function App() {
               <button
                 key={key}
                 className={"tab" + (mode === key ? " active" : "")}
-                onClick={() => {
-                  setRunning(false);
-                  setMode(key);
-                }}
+                onClick={() => selectMode(key)}
               >
                 {m.label}
               </button>
@@ -214,8 +234,8 @@ export default function App() {
           </button>
           <button
             className="btn ghost"
-            onClick={complete}
-            title="Skip to next"
+            onClick={() => advance(false)}
+            title="Skip to next phase"
           >
             ⤼
           </button>
@@ -244,18 +264,6 @@ export default function App() {
             <span className="cap">all-time</span>
           </div>
         </section>
-
-        {stats.recent.length > 0 && (
-          <ul className="recent">
-            {stats.recent.map((r, i) => (
-              <li key={i}>
-                <span className={"tag " + r.mode}>{r.mode}</span>
-                <span className="rlabel">{r.label || "—"}</span>
-                <span className="rmin">{r.minutes}m</span>
-              </li>
-            ))}
-          </ul>
-        )}
       </main>
     </div>
   );
