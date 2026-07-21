@@ -34,10 +34,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* anchored near the top, not hard-centered: switching Timer <-> Tasks (or
+     phases) changes the card height without yanking the header/nav around. */
+  justify-content: flex-start;
   gap: 18px;
-  padding: 32px 16px;
-  overflow: hidden;
+  padding: clamp(24px, 7vh, 72px) 16px 48px;
+  overflow-x: hidden;
 }
 
 /* Animated aurora background */
@@ -64,6 +66,18 @@ body {
   -webkit-backdrop-filter: blur(26px) saturate(160%);
   box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.7),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: cardin 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cardin {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .brand {

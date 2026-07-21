@@ -6,6 +6,11 @@ const MODES = {
   long: { label: "Long Break", minutes: 30, accent: "#a78bfa", glow: "#a78bfa" },
 };
 
+// TEMP: quick-test override — every phase lasts this many seconds.
+// Set back to null to use the real per-mode durations above.
+const TEST_SECONDS = 10;
+const secs = (key) => TEST_SECONDS ?? MODES[key].minutes * 60;
+
 const RADIUS = 132;
 const CIRC = 2 * Math.PI * RADIUS;
 
@@ -41,7 +46,7 @@ function ding() {
 
 export default function Pomodoro({ onAccent }) {
   const [mode, setMode] = useState("focus");
-  const [remaining, setRemaining] = useState(MODES.focus.minutes * 60);
+  const [remaining, setRemaining] = useState(secs("focus"));
   const [running, setRunning] = useState(false);
   const [label, setLabel] = useState("");
   const [autostart, setAutostart] = useState(true);
@@ -63,7 +68,7 @@ export default function Pomodoro({ onAccent }) {
   labelRef.current = label;
   remainingRef.current = remaining;
 
-  const total = MODES[mode].minutes * 60;
+  const total = secs(mode);
   const accent = MODES[mode].accent;
 
   const loadStats = () =>
@@ -133,8 +138,8 @@ export default function Pomodoro({ onAccent }) {
 
   function go(nextMode, autoRun) {
     setMode(nextMode);
-    setRemaining(MODES[nextMode].minutes * 60);
-    remainingRef.current = MODES[nextMode].minutes * 60;
+    setRemaining(secs(nextMode));
+    remainingRef.current = secs(nextMode);
     deadlineRef.current = null;
     setRunning(Boolean(autoRun));
     setSeq((s) => s + 1);
@@ -144,8 +149,8 @@ export default function Pomodoro({ onAccent }) {
     setRunning(false);
     deadlineRef.current = null;
     setMode(key);
-    setRemaining(MODES[key].minutes * 60);
-    remainingRef.current = MODES[key].minutes * 60;
+    setRemaining(secs(key));
+    remainingRef.current = secs(key);
   }
 
   function toggle() {
@@ -160,8 +165,8 @@ export default function Pomodoro({ onAccent }) {
   function reset() {
     setRunning(false);
     deadlineRef.current = null;
-    setRemaining(MODES[mode].minutes * 60);
-    remainingRef.current = MODES[mode].minutes * 60;
+    setRemaining(secs(mode));
+    remainingRef.current = secs(mode);
   }
 
   const progress = useMemo(() => 1 - remaining / total, [remaining, total]);
