@@ -1,0 +1,22 @@
+services:
+  pomodoro:
+    build: .
+    image: pomodoro-flow:latest
+    container_name: pomodoro-flow
+    # Autostart: comes up on boot / Docker daemon start, restarts on crash.
+    restart: always
+    ports:
+      # host 2570 -> container 9174 (unusual, memorable, unlikely to collide)
+      - "2570:9174"
+    volumes:
+      # persist focus-session history across rebuilds
+      - pomodoro-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:9174/api/health').status==200 else sys.exit(1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  pomodoro-data:
