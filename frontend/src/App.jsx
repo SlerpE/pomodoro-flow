@@ -257,7 +257,6 @@ export default function App() {
           </ul>
         )}
       </main>
-      <footer className="foot">Flask · React · one container · :2570</footer>
     </div>
   );
 }

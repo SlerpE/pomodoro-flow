@@ -47,20 +47,9 @@ body {
   z-index: 0;
   background:
     radial-gradient(40% 40% at 20% 20%, var(--glow), transparent 60%),
-    radial-gradient(45% 45% at 80% 30%, #6d5dff, transparent 60%),
-    radial-gradient(50% 50% at 50% 90%, #22d3ee, transparent 60%);
+    radial-gradient(45% 45% at 80% 30%, #6d5dff, transparent 60%);
   filter: blur(90px) saturate(140%);
-  opacity: 0.45;
-  animation: drift 18s ease-in-out infinite alternate;
-}
-
-@keyframes drift {
-  from {
-    transform: translate3d(-4%, -2%, 0) scale(1);
-  }
-  to {
-    transform: translate3d(4%, 3%, 0) scale(1.12);
-  }
+  opacity: 0.4;
 }
 
 .card {
@@ -364,13 +353,4 @@ body {
 .rmin {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
-}
-
-.foot {
-  position: relative;
-  z-index: 1;
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  text-transform: uppercase;
 }
