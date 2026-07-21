@@ -8,8 +8,11 @@ const MODES = {
 
 // TEMP: quick-test override — every phase lasts this many seconds.
 // Set back to null to use the real per-mode durations above.
-const TEST_SECONDS = 10;
+const TEST_SECONDS = 30;
 const secs = (key) => TEST_SECONDS ?? MODES[key].minutes * 60;
+
+// Start the audible countdown this many seconds before the phase ends.
+const COUNTDOWN_FROM = 15;
 
 const RADIUS = 132;
 const CIRC = 2 * Math.PI * RADIUS;
@@ -24,24 +27,50 @@ function fmt(sec) {
   return `${m}:${s}`;
 }
 
-function ding() {
+// One shared AudioContext (creating one per beep is heavy and rate-limited).
+let _actx = null;
+function actx() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.connect(g);
-    g.connect(ctx.destination);
-    o.type = "sine";
-    o.frequency.setValueAtTime(880, ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5);
-    g.gain.setValueAtTime(0.001, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.9);
-    o.start();
-    o.stop(ctx.currentTime + 0.95);
+    if (!_actx) _actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (_actx.state === "suspended") _actx.resume();
+    return _actx;
   } catch (e) {
-    /* audio not available */
+    return null;
   }
+}
+
+// A single short tone. `peak` is the gain (loudness) — kept low on purpose.
+function blip(freq, at, dur, peak, type = "sine") {
+  const ctx = actx();
+  if (!ctx) return;
+  const t0 = ctx.currentTime + at;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t0);
+  o.connect(g);
+  g.connect(ctx.destination);
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.exponentialRampToValueAtTime(peak, t0 + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.start(t0);
+  o.stop(t0 + dur + 0.03);
+}
+
+// End-of-phase signal: a rising 4-note arpeggio — distinct and hard to miss
+// thanks to the melody, not the volume (peak gain stays at the old level).
+function chime() {
+  const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+  notes.forEach((f, i) =>
+    blip(f, i * 0.16, i === notes.length - 1 ? 0.6 : 0.22, 0.32, "triangle")
+  );
+}
+
+// One countdown tick. The final three seconds tick higher so you can feel
+// the phase closing in. All quiet.
+function tick(secondsLeft) {
+  if (secondsLeft <= 3) blip(1320, 0, 0.13, 0.26, "sine");
+  else blip(760, 0, 0.07, 0.16, "sine");
 }
 
 export default function Pomodoro({ onAccent }) {
@@ -59,6 +88,7 @@ export default function Pomodoro({ onAccent }) {
   });
 
   const deadlineRef = useRef(null);
+  const lastTickRef = useRef(null); // last whole second we played a tick for
   const autostartRef = useRef(autostart);
   const modeRef = useRef(mode);
   const labelRef = useRef(label);
@@ -94,6 +124,11 @@ export default function Pomodoro({ onAccent }) {
         advance(true); // natural completion -> record it
       } else {
         setRemaining(left);
+        // audible countdown over the final seconds (once per whole second)
+        if (left <= COUNTDOWN_FROM && left !== lastTickRef.current) {
+          lastTickRef.current = left;
+          tick(left);
+        }
       }
     }, 250);
     return () => clearInterval(id);
@@ -110,7 +145,7 @@ export default function Pomodoro({ onAccent }) {
   }, [mode, onAccent]);
 
   function advance(record) {
-    ding();
+    chime();
     const finished = modeRef.current;
     let nextMode = "focus";
     if (finished === "focus") {
@@ -141,6 +176,7 @@ export default function Pomodoro({ onAccent }) {
     setRemaining(secs(nextMode));
     remainingRef.current = secs(nextMode);
     deadlineRef.current = null;
+    lastTickRef.current = null;
     setRunning(Boolean(autoRun));
     setSeq((s) => s + 1);
   }
@@ -148,6 +184,7 @@ export default function Pomodoro({ onAccent }) {
   function selectMode(key) {
     setRunning(false);
     deadlineRef.current = null;
+    lastTickRef.current = null;
     setMode(key);
     setRemaining(secs(key));
     remainingRef.current = secs(key);
@@ -158,6 +195,7 @@ export default function Pomodoro({ onAccent }) {
       setRunning(false);
       deadlineRef.current = null;
     } else {
+      actx(); // unlock/resume audio while we still have the click gesture
       setRunning(true);
     }
   }
@@ -165,6 +203,7 @@ export default function Pomodoro({ onAccent }) {
   function reset() {
     setRunning(false);
     deadlineRef.current = null;
+    lastTickRef.current = null;
     setRemaining(secs(mode));
     remainingRef.current = secs(mode);
   }
