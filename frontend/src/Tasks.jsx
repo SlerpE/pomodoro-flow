@@ -31,7 +31,7 @@ export default function Tasks() {
     })
       .then((r) => r.json())
       .then((task) => {
-        setTasks((prev) => [task, ...prev]);
+        setTasks((prev) => [...prev, task]);
         setTitle("");
       })
       .catch(() => {});

@@ -126,11 +126,13 @@ def create_task():
     if not title:
         return jsonify(error="title required"), 400
     with get_db() as conn:
-        # new tasks land at the top (smallest position)
-        top = conn.execute("SELECT COALESCE(MIN(position), 0) FROM tasks").fetchone()[0]
+        # new tasks land at the bottom (largest position)
+        bottom = conn.execute(
+            "SELECT COALESCE(MAX(position), -1) FROM tasks"
+        ).fetchone()[0]
         cur = conn.execute(
             "INSERT INTO tasks (title, done, created_at, position) VALUES (?,0,?,?)",
-            (title, datetime.utcnow().isoformat() + "Z", top - 1),
+            (title, datetime.utcnow().isoformat() + "Z", bottom + 1),
         )
         conn.commit()
         row = conn.execute("SELECT * FROM tasks WHERE id=?", (cur.lastrowid,)).fetchone()
