@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 const MODES = {
   focus: { label: "Focus", minutes: 25, accent: "#ff5f6d", glow: "#ff5f6d" },
   short: { label: "Short Break", minutes: 5, accent: "#22d3ee", glow: "#22d3ee" },
-  long: { label: "Long Break", minutes: 15, accent: "#a78bfa", glow: "#a78bfa" },
+  long: { label: "Long Break", minutes: 30, accent: "#a78bfa", glow: "#a78bfa" },
 };
 
 const RADIUS = 132;
@@ -39,7 +39,7 @@ function ding() {
   }
 }
 
-export default function Pomodoro() {
+export default function Pomodoro({ onAccent }) {
   const [mode, setMode] = useState("focus");
   const [remaining, setRemaining] = useState(MODES.focus.minutes * 60);
   const [running, setRunning] = useState(false);
@@ -98,6 +98,11 @@ export default function Pomodoro() {
   useEffect(() => {
     document.title = `${fmt(remaining)} · ${MODES[mode].label} — Pomodoro Flow`;
   }, [remaining, mode]);
+
+  // Let the shell (aurora / brand / nav) follow the current phase colour.
+  useEffect(() => {
+    onAccent?.({ accent: MODES[mode].accent, glow: MODES[mode].glow });
+  }, [mode, onAccent]);
 
   function advance(record) {
     ding();

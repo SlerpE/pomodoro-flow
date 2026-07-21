@@ -77,7 +77,7 @@ export default function Tasks() {
           placeholder="Add a task and press Enter…"
           onChange={(e) => setTitle(e.target.value)}
         />
-        <button className="btn primary add-btn" type="submit">
+        <button className="btn add-btn" type="submit" aria-label="Add task">
           +
         </button>
       </form>

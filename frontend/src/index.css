@@ -380,6 +380,7 @@ body {
 
 .add-row {
   display: flex;
+  align-items: stretch;
   gap: 10px;
   margin-bottom: 18px;
 }
@@ -387,15 +388,28 @@ body {
 .add-row .task {
   margin: 0;
   flex: 1;
+  min-width: 0;
 }
 
 .add-btn {
+  flex: 0 0 auto;
   padding: 0;
-  width: 50px;
-  min-width: 50px;
+  width: 48px;
+  min-width: 48px;
   border-radius: 14px;
   font-size: 26px;
+  font-weight: 600;
   line-height: 1;
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 10px 26px -10px var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-btn:hover {
+  filter: brightness(1.08);
 }
 
 .tasklist {
