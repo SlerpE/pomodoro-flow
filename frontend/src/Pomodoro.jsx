@@ -12,7 +12,7 @@ const TEST_SECONDS = 30;
 const secs = (key) => TEST_SECONDS ?? MODES[key].minutes * 60;
 
 // Start the audible countdown this many seconds before the phase ends.
-const COUNTDOWN_FROM = 15;
+const COUNTDOWN_FROM = 5;
 
 const RADIUS = 132;
 const CIRC = 2 * Math.PI * RADIUS;
@@ -66,10 +66,11 @@ function chime() {
   );
 }
 
-// One countdown tick. The final three seconds tick higher so you can feel
-// the phase closing in. All quiet.
+// One countdown tick. The final three seconds (3 -> 2 -> 1) climb the scale
+// so the ending lifts upward. All quiet.
+const FINAL3 = { 3: 880.0, 2: 1108.73, 1: 1318.51 }; // A5 -> C#6 -> E6
 function tick(secondsLeft) {
-  if (secondsLeft <= 3) blip(1320, 0, 0.13, 0.26, "sine");
+  if (secondsLeft <= 3) blip(FINAL3[secondsLeft], 0, 0.13, 0.26, "sine");
   else blip(760, 0, 0.07, 0.16, "sine");
 }
 
