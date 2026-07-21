@@ -6,10 +6,11 @@ A slick, single-container Pomodoro timer — **Flask + React**, served from one 
 
 ## Features
 
-- **Glassmorphism UI** with animated aurora background and a live circular progress ring.
-- **Focus / Short break / Long break** modes with automatic 4-cycle rotation.
-- **Auto-start** the next session (toggleable).
-- **Persistent stats** — today / all-time focus sessions and minutes, stored in SQLite.
+- **Two tools, one app** — a Pomodoro **Timer** and a standalone **Task tracker**, switchable from the top nav.
+- **Glassmorphism UI** with a soft aurora background and a live circular progress ring.
+- **Focus / Short break / Long break** modes with automatic 4-cycle rotation and toggleable **auto-start**.
+- **Tasks**: add, check off, delete, and clear completed — persisted in SQLite.
+- **Persistent stats** — today / all-time focus sessions and minutes (recorded only when a focus block actually finishes).
 - **Wall-clock timer** that stays accurate even when the tab is throttled.
 - **One container**: React is built at image-build time and served as static files by Flask; the same process exposes the `/api` backend.
 
@@ -47,11 +48,16 @@ cd frontend && npm install && npm run dev                         # :9175, proxi
 
 ## API
 
-| Method | Route            | Description                        |
-| ------ | ---------------- | ---------------------------------- |
-| GET    | `/api/health`    | Liveness probe                     |
-| POST   | `/api/sessions`  | Record a finished focus session    |
-| GET    | `/api/stats`     | Today / all-time totals + recents  |
+| Method | Route                    | Description                        |
+| ------ | ------------------------ | ---------------------------------- |
+| GET    | `/api/health`            | Liveness probe                     |
+| POST   | `/api/sessions`          | Record a finished focus session    |
+| GET    | `/api/stats`             | Today / all-time focus totals      |
+| GET    | `/api/tasks`             | List tasks                         |
+| POST   | `/api/tasks`             | Create a task `{title}`            |
+| PATCH  | `/api/tasks/<id>`        | Update `{done?, title?}`           |
+| DELETE | `/api/tasks/<id>`        | Delete a task                      |
+| DELETE | `/api/tasks/completed`   | Clear all completed tasks          |
 
 ## Layout
 

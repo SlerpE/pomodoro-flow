@@ -36,6 +36,16 @@ def init_db():
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tasks (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                title      TEXT NOT NULL,
+                done       INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
         conn.commit()
 
 
@@ -81,6 +91,82 @@ def stats():
         total={"count": total["c"], "minutes": total["m"]},
         recent=[dict(r) for r in recent],
     )
+
+
+# --- Task tracker (independent of the Pomodoro timer) ---
+def task_to_dict(row):
+    return {
+        "id": row["id"],
+        "title": row["title"],
+        "done": bool(row["done"]),
+        "created_at": row["created_at"],
+    }
+
+
+@app.route("/api/tasks")
+def list_tasks():
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM tasks ORDER BY done ASC, id DESC"
+        ).fetchall()
+    return jsonify(tasks=[task_to_dict(r) for r in rows])
+
+
+@app.route("/api/tasks", methods=["POST"])
+def create_task():
+    payload = request.get_json(force=True, silent=True) or {}
+    title = (payload.get("title") or "").strip()[:200]
+    if not title:
+        return jsonify(error="title required"), 400
+    with get_db() as conn:
+        cur = conn.execute(
+            "INSERT INTO tasks (title, done, created_at) VALUES (?,0,?)",
+            (title, datetime.utcnow().isoformat() + "Z"),
+        )
+        conn.commit()
+        row = conn.execute("SELECT * FROM tasks WHERE id=?", (cur.lastrowid,)).fetchone()
+    return jsonify(task_to_dict(row)), 201
+
+
+@app.route("/api/tasks/<int:task_id>", methods=["PATCH"])
+def update_task(task_id):
+    payload = request.get_json(force=True, silent=True) or {}
+    fields, values = [], []
+    if "done" in payload:
+        fields.append("done=?")
+        values.append(1 if payload["done"] else 0)
+    if "title" in payload:
+        title = (payload.get("title") or "").strip()[:200]
+        if not title:
+            return jsonify(error="title required"), 400
+        fields.append("title=?")
+        values.append(title)
+    if not fields:
+        return jsonify(error="nothing to update"), 400
+    values.append(task_id)
+    with get_db() as conn:
+        conn.execute(f"UPDATE tasks SET {', '.join(fields)} WHERE id=?", values)
+        conn.commit()
+        row = conn.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
+    if not row:
+        return jsonify(error="not found"), 404
+    return jsonify(task_to_dict(row))
+
+
+@app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
+def delete_task(task_id):
+    with get_db() as conn:
+        conn.execute("DELETE FROM tasks WHERE id=?", (task_id,))
+        conn.commit()
+    return jsonify(ok=True)
+
+
+@app.route("/api/tasks/completed", methods=["DELETE"])
+def clear_completed():
+    with get_db() as conn:
+        conn.execute("DELETE FROM tasks WHERE done=1")
+        conn.commit()
+    return jsonify(ok=True)
 
 
 # --- Serve the built React app (single-container setup) ---

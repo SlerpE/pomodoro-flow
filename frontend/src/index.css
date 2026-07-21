@@ -4,8 +4,8 @@
   --stroke: rgba(255, 255, 255, 0.08);
   --text: #eef1ff;
   --muted: #8b90b5;
-  --accent: #ff5f6d;
-  --glow: #ff5f6d;
+  --accent: #a78bfa;
+  --glow: #7c5cff;
 }
 
 * {
@@ -66,20 +66,50 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.head {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 8px;
-}
-
 .brand {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 10px;
   font-weight: 700;
   letter-spacing: 0.02em;
   font-size: 15px;
+}
+
+.topnav {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--stroke);
+  backdrop-filter: blur(12px);
+}
+
+.navbtn {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbtn:hover {
+  color: var(--text);
+}
+
+.navbtn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 22px -8px var(--accent);
 }
 
 .dot {
@@ -300,4 +330,175 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--muted);
+}
+
+/* brief highlight when a focus session is recorded */
+.stat.flash {
+  animation: statflash 2.2s ease;
+}
+
+@keyframes statflash {
+  0% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  15% {
+    border-color: var(--accent);
+    box-shadow: 0 0 22px -4px var(--accent);
+  }
+  100% {
+    border-color: var(--stroke);
+    box-shadow: none;
+  }
+}
+
+/* ---- Task tracker ---- */
+.tasks-card {
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+.tasks-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.tasks-head h2 {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.tcount {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+.add-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.add-row .task {
+  margin: 0;
+  flex: 1;
+}
+
+.add-btn {
+  padding: 0;
+  width: 50px;
+  min-width: 50px;
+  border-radius: 14px;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.tasklist {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tasklist li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--stroke);
+  transition: opacity 0.2s ease;
+}
+
+.tasklist li.done {
+  opacity: 0.55;
+}
+
+.check {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 2px solid var(--muted);
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.check:hover {
+  border-color: var(--accent);
+}
+
+.check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 14px -2px var(--accent);
+}
+
+.ttitle {
+  flex: 1;
+  font-size: 14.5px;
+  word-break: break-word;
+}
+
+.done .ttitle {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.del {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.del:hover {
+  background: rgba(255, 95, 109, 0.16);
+  color: #ff8b95;
+}
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 10px;
+}
+
+.clear-done {
+  margin-top: 16px;
+  align-self: center;
+  padding: 9px 18px;
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-done:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
 }
