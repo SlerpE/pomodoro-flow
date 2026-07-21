@@ -6,9 +6,9 @@ const MODES = {
   long: { label: "Long Break", minutes: 30, accent: "#a78bfa", glow: "#a78bfa" },
 };
 
-// TEMP: quick-test override — every phase lasts this many seconds.
-// Set back to null to use the real per-mode durations above.
-const TEST_SECONDS = 30;
+// Quick-test override — when set, every phase lasts this many seconds.
+// null = use the real per-mode durations above.
+const TEST_SECONDS = null;
 const secs = (key) => TEST_SECONDS ?? MODES[key].minutes * 60;
 
 // Start the audible countdown this many seconds before the phase ends.

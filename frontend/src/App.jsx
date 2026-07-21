@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Pomodoro from "./Pomodoro.jsx";
 import Tasks from "./Tasks.jsx";
 
@@ -6,12 +6,10 @@ const DEFAULT_ACCENT = { accent: "#a78bfa", glow: "#7c5cff" };
 
 export default function App() {
   const [view, setView] = useState("timer");
-  const [accent, setAccent] = useState(DEFAULT_ACCENT);
-
-  // Tasks view uses the neutral shell colour; timer view drives it per phase.
-  useEffect(() => {
-    if (view === "tasks") setAccent(DEFAULT_ACCENT);
-  }, [view]);
+  // Pomodoro reports its current phase colour; we only apply it on the timer
+  // view (Tasks uses the neutral shell colour).
+  const [pomoAccent, setPomoAccent] = useState(DEFAULT_ACCENT);
+  const accent = view === "timer" ? pomoAccent : DEFAULT_ACCENT;
 
   return (
     <div
@@ -40,7 +38,14 @@ export default function App() {
         </button>
       </nav>
 
-      {view === "timer" ? <Pomodoro onAccent={setAccent} /> : <Tasks />}
+      {/* Both stay mounted so the timer keeps running while you're on Tasks.
+          display:contents keeps the visible card as a direct flex child. */}
+      <div style={{ display: view === "timer" ? "contents" : "none" }}>
+        <Pomodoro onAccent={setPomoAccent} />
+      </div>
+      <div style={{ display: view === "tasks" ? "contents" : "none" }}>
+        <Tasks />
+      </div>
     </div>
   );
 }
